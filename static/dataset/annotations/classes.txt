@@ -1,0 +1,4 @@
+car
+number_plate
+car_light
+table
