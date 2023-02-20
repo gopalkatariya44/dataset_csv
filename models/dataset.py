@@ -26,7 +26,6 @@ class Dataset:
             return [i.split('\n')[0] for i in f.readlines()]
 
     def to_csv(self, csv_path=None, image_ex=".jpg"):
-        self.dataset_to_list()
         df = pd.DataFrame(self.dataset_to_list(image_ex))
         df.to_csv(csv_path, index=False)
 
