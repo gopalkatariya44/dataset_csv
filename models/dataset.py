@@ -26,12 +26,12 @@ class Dataset:
         with open(self.classes_path, 'r') as f:
             return [i.split('\n')[0] for i in f.readlines()]
 
-    def to_csv(self, csv_path=None, image_ex=".jpg"):
-        df = pd.DataFrame(self.dataset_to_list(image_ex))
+    def to_csv(self, csv_path=None):
+        df = pd.DataFrame(self.dataset_to_list())
         df.to_csv(csv_path, index=False)
         print(f"csv file generated here '{csv_path}'")
 
-    def dataset_to_list(self, image_ex):
+    def dataset_to_list(self):
         dataset_list = []
         p = re.compile(config.image_regex)
         images_list = [i for i in os.listdir(self.images_path) if re.search(p, i)]
