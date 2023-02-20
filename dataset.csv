@@ -1,0 +1,16 @@
+index,image,txt,classes
+0,dataset/images/20230207124901.jpg,dataset/annotations/20230207145026.txt,{'0': 'car'}
+1,dataset/images/20230207141357.jpg,dataset/annotations/20230207124828.txt,"{'0': 'car', '1': 'number_plate'}"
+2,dataset/images/20230207124902.jpg,dataset/annotations/20230207124742.txt,{'0': 'car'}
+3,dataset/images/20230207141341.jpg,dataset/annotations/20230207124740.txt,"{'1': 'number_plate', '0': 'car', '2': 'car_light'}"
+4,dataset/images/20230207124913.jpg,dataset/annotations/20230207141357.txt,{'0': 'car'}
+5,dataset/images/20230207124709.jpg,dataset/annotations/20230207124901.txt,"{'0': 'car', '1': 'number_plate'}"
+6,dataset/images/20230207141409.jpg,dataset/annotations/20230207141341.txt,{'0': 'car'}
+7,dataset/images/20230207145026.jpg,dataset/annotations/20230207124902.txt,"{'0': 'car', '1': 'number_plate'}"
+8,dataset/images/20230207124828.jpg,dataset/annotations/20230207124709.txt,{'3': 'table'}
+9,dataset/images/20230207124742.jpg,dataset/annotations/20230207124913.txt,"{'1': 'number_plate', '0': 'car'}"
+10,dataset/images/20230207124740.jpg,dataset/annotations/20230207141409.txt,{'0': 'car'}
+11,dataset/images/20230207124614.jpg,dataset/annotations/20230207150532.txt,{'0': 'car'}
+12,dataset/images/20230207144533.jpg,dataset/annotations/20230207124702.txt,"{'1': 'number_plate', '0': 'car'}"
+13,dataset/images/20230207150536.jpg,dataset/annotations/20230207124614.txt,"{'0': 'car', '1': 'number_plate', '2': 'car_light'}"
+14,dataset/images/20230207150532.jpg,dataset/annotations/20230207144533.txt,"{'0': 'car', '1': 'number_plate'}"
