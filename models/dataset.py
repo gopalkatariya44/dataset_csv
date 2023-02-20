@@ -40,7 +40,7 @@ class Dataset:
         for txt in yolo_txt_list:
             with open(f"{self.yolo_txt_path}/{txt}", 'r') as f:
                 lines = f.readlines()
-            if f"{txt.split('.')[0]}.jpg" in images_list:
+            if f"{txt.split('.')[0]}{image_ex}" in images_list:
                 dataset_list.append({
                     "index": index,
                     "image": f"{self.images_path}/{txt.split('.')[0]}{image_ex}",
