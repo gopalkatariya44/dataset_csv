@@ -2,7 +2,7 @@ import os
 import re
 import config
 import pandas as pd
-from dataset_schema import DatasetSchema
+from .dataset_schema import DatasetSchema
 
 
 class Dataset:
@@ -44,9 +44,9 @@ class Dataset:
                 prefix = filename1[:-4:]
                 if prefix in filename2:
                     if prefix in file_dict:
-                        file_dict[prefix].append(filename1, filename2)
+                        file_dict[prefix].append(filename2, filename1)
                     else:
-                        file_dict[prefix] = [filename1, filename2]
+                        file_dict[prefix] = [filename2, filename1]
 
         # now start create a dataset list for csv
         index = 0
