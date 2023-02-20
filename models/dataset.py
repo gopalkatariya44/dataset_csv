@@ -36,14 +36,12 @@ class Dataset:
         p = re.compile(config.image_regex)
         images_list = [i for i in os.listdir(self.images_path) if re.search(p, i)]
         yolo_txt_list = [i for i in os.listdir(self.yolo_txt_path) if i.endswith('.txt') and i != "classes.txt"]
-        print(images_list)
-        print(yolo_txt_list)
 
         # create dict for same txt and images
         file_dict = {}
-        for i, filename1 in enumerate(images_list):
-            for j, filename2 in enumerate(yolo_txt_list):
-                prefix = filename1.split('.')[0]
+        for i, filename1 in enumerate(yolo_txt_list):
+            for j, filename2 in enumerate(images_list):
+                prefix = filename1[:-4:]
                 if prefix in filename2:
                     if prefix in file_dict:
                         file_dict[prefix].append(filename1, filename2)
@@ -55,7 +53,7 @@ class Dataset:
         for i in file_dict:
             with open(f"{self.yolo_txt_path}/{file_dict[i][-1]}", 'r') as f:
                 lines = f.readlines()
-            # if f"{txt.split('.')[0]}{image_ex}" in images_list:
+
             dataset_schema = DatasetSchema()
             dataset_schema.index = index
             dataset_schema.image_path = f"{self.images_path}/{file_dict[i][0]}"
