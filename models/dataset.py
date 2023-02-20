@@ -2,6 +2,7 @@ import os
 import re
 import config
 import pandas as pd
+from dataset_schema import DatasetSchema
 
 
 class Dataset:
@@ -28,31 +29,45 @@ class Dataset:
     def to_csv(self, csv_path=None, image_ex=".jpg"):
         df = pd.DataFrame(self.dataset_to_list(image_ex))
         df.to_csv(csv_path, index=False)
+        print(f"csv file generated here '{csv_path}'")
 
     def dataset_to_list(self, image_ex):
         dataset_list = []
         p = re.compile(config.image_regex)
         images_list = [i for i in os.listdir(self.images_path) if re.search(p, i)]
         yolo_txt_list = [i for i in os.listdir(self.yolo_txt_path) if i.endswith('.txt') and i != "classes.txt"]
-        index = 0
+        print(images_list)
+        print(yolo_txt_list)
 
-        for txt in yolo_txt_list:
-            with open(f"{self.yolo_txt_path}/{txt}", 'r') as f:
+        # create dict for same txt and images
+        file_dict = {}
+        for i, filename1 in enumerate(images_list):
+            for j, filename2 in enumerate(yolo_txt_list):
+                prefix = filename1.split('.')[0]
+                if prefix in filename2:
+                    if prefix in file_dict:
+                        file_dict[prefix].append(filename1, filename2)
+                    else:
+                        file_dict[prefix] = [filename1, filename2]
+
+        # now start create a dataset list for csv
+        index = 0
+        for i in file_dict:
+            with open(f"{self.yolo_txt_path}/{file_dict[i][-1]}", 'r') as f:
                 lines = f.readlines()
-            if f"{txt.split('.')[0]}{image_ex}" in images_list:
-                dataset_list.append({
-                    "index": index,
-                    "image": f"{self.images_path}/{txt.split('.')[0]}{image_ex}",
-                    "txt": f"{self.yolo_txt_path}/{txt}",
-                    "classes": {}
+            # if f"{txt.split('.')[0]}{image_ex}" in images_list:
+            dataset_schema = DatasetSchema()
+            dataset_schema.index = index
+            dataset_schema.image_path = f"{self.images_path}/{file_dict[i][0]}"
+            dataset_schema.txt_path = f"{self.yolo_txt_path}/{file_dict[i][-1]}"
+
+            for line in lines:
+                label_index = int(line.split()[0])
+                classes_list = self.read_classes()
+                dataset_schema.classes.update({
+                    f"{label_index}": classes_list[label_index]
                 })
-                for line in lines:
-                    label_index = int(line.split()[0])
-                    classes_list = self.read_classes()
-                    dataset_list[index]['classes'].update({
-                        f"{label_index}": classes_list[label_index]
-                    })
-                    # if classes_list[int(label_index)] not in dataset_list[index]['classes']:
-                    #     dataset_list[index]['classes'].append(classes_list[int(label_index)])
-                index += 1
+
+            dataset_list.append(dataset_schema.as_dict())
+            index += 1
         return dataset_list
