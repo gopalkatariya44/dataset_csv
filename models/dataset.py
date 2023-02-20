@@ -25,33 +25,35 @@ class Dataset:
         with open(self.classes_path, 'r') as f:
             return [i.split('\n')[0] for i in f.readlines()]
 
-    def to_csv(self, csv_path=None):
+    def to_csv(self, csv_path=None, image_ex=".jpg"):
         self.dataset_to_list()
-        df = pd.DataFrame(self.dataset_to_list())
+        df = pd.DataFrame(self.dataset_to_list(image_ex))
         df.to_csv(csv_path, index=False)
 
-    def dataset_to_list(self):
+    def dataset_to_list(self, image_ex):
         dataset_list = []
         p = re.compile(config.image_regex)
         images_list = [i for i in os.listdir(self.images_path) if re.search(p, i)]
         yolo_txt_list = [i for i in os.listdir(self.yolo_txt_path) if i.endswith('.txt') and i != "classes.txt"]
         index = 0
-        for img, txt in zip(images_list, yolo_txt_list):
+
+        for txt in yolo_txt_list:
             with open(f"{self.yolo_txt_path}/{txt}", 'r') as f:
                 lines = f.readlines()
-            dataset_list.append({
-                "index": index,
-                "image": f"{self.images_path}/{img}",
-                "txt": f"{self.yolo_txt_path}/{txt}",
-                "classes": {}
-            })
-            for line in lines:
-                label_index = int(line.split()[0])
-                classes_list = self.read_classes()
-                dataset_list[index]['classes'].update({
-                    f"{label_index}": classes_list[label_index]
+            if f"{txt.split('.')[0]}.jpg" in images_list:
+                dataset_list.append({
+                    "index": index,
+                    "image": f"{self.images_path}/{txt.split('.')[0]}{image_ex}",
+                    "txt": f"{self.yolo_txt_path}/{txt}",
+                    "classes": {}
                 })
-                # if classes_list[int(label_index)] not in dataset_list[index]['classes']:
-                #     dataset_list[index]['classes'].append(classes_list[int(label_index)])
-            index += 1
+                for line in lines:
+                    label_index = int(line.split()[0])
+                    classes_list = self.read_classes()
+                    dataset_list[index]['classes'].update({
+                        f"{label_index}": classes_list[label_index]
+                    })
+                    # if classes_list[int(label_index)] not in dataset_list[index]['classes']:
+                    #     dataset_list[index]['classes'].append(classes_list[int(label_index)])
+                index += 1
         return dataset_list
