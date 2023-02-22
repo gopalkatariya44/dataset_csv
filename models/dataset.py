@@ -31,29 +31,38 @@ class Dataset:
         bike\n
         :return: List Classes ["bus", "car", "bike"]
         """
-        with open(self.classes_path, 'r') as f:
-            return [i.split('\n')[0] for i in f.readlines()]
+        try:
+            with open(self.classes_path, 'r') as f:
+                return [i.split('\n')[0] for i in f.readlines()]
+        except Exception as e:
+            print(e)
 
     def to_csv(self, csv_path=None):
-        df = pd.DataFrame(self.dataset_to_list())
-        df.to_csv(csv_path, index=False)
-        print(f"csv file generated here '{csv_path}'")
+        try:
+            df = pd.DataFrame(self.dataset_to_list())
+            df.to_csv(csv_path, index=False)
+            print(f"csv file generated here '{csv_path}'")
+        except Exception as e:
+            print(e)
 
     def similar_image_text_dict(self):
-        compiled_image_regex = re.compile(config.image_regex)
-        images_list = [i for i in os.listdir(self.images_path) if re.search(compiled_image_regex, i)]
-        yolo_txt_list = [i for i in os.listdir(self.yolo_txt_path) if i.endswith('.txt') and i != "classes.txt"]
-        # create dict for same txt and images
-        file_dict = {}
-        for i, txt in enumerate(yolo_txt_list):
-            for j, image in enumerate(images_list):
-                prefix = txt[:-4:]
-                if prefix in image:
-                    if prefix in file_dict:
-                        file_dict[prefix].append(image, txt)
-                    else:
-                        file_dict[prefix] = [image, txt]
-        return file_dict
+        try:
+            compiled_image_regex = re.compile(config.image_regex)
+            images_list = [i for i in os.listdir(self.images_path) if re.search(compiled_image_regex, i)]
+            yolo_txt_list = [i for i in os.listdir(self.yolo_txt_path) if i.endswith('.txt') and i != "classes.txt"]
+            # create dict for same txt and images
+            file_dict = {}
+            for i, txt in enumerate(yolo_txt_list):
+                for j, image in enumerate(images_list):
+                    prefix = txt[:-4:]
+                    if prefix in image:
+                        if prefix in file_dict:
+                            file_dict[prefix].append(image, txt)
+                        else:
+                            file_dict[prefix] = [image, txt]
+            return file_dict
+        except Exception as e:
+            print(e)
 
     def dataset_to_list(self):
         """
@@ -69,37 +78,42 @@ class Dataset:
         dataset_list = []
         # now start create a dataset list for csv
         final_dict = self.similar_image_text_dict()
-        for index, i in enumerate(final_dict):
-            with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
-                lines = f.readlines()
-            dataset_schema = DatasetSchema(index=index,
-                                           image_path=f"{self.images_path}/{final_dict[i][0]}",
-                                           txt_path=f"{self.yolo_txt_path}/{final_dict[i][1]}",
-                                           classes={},
-                                           )
-            for line in lines:
-                label_index = int(line.split()[0])
-                classes_list = self.read_classes()
-                dataset_schema.classes.update({
-                    f"{label_index}": classes_list[label_index]
-                })
-            dataset_list.append(dataset_schema.as_dict())
-        return dataset_list
+        try:
+            for index, i in enumerate(final_dict):
+                with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
+                    lines = f.readlines()
+                dataset_schema = DatasetSchema(index=index,
+                                               image_path=f"{self.images_path}/{final_dict[i][0]}",
+                                               txt_path=f"{self.yolo_txt_path}/{final_dict[i][1]}",
+                                               classes={},
+                                               )
+                for line in lines:
+                    label_index = int(line.split()[0])
+                    classes_list = self.read_classes()
+                    dataset_schema.classes.update({
+                        f"{label_index}": classes_list[label_index]
+                    })
+                dataset_list.append(dataset_schema.as_dict())
+            return dataset_list
+        except Exception as e:
+            print(e)
 
     def sprate_labels(self, output_path: str):
         classes = self.read_classes()
         final_dict = self.similar_image_text_dict()
+        try:
+            for index, i in enumerate(final_dict):
+                with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
+                    lines = f.readlines()
 
-        for index, i in enumerate(final_dict):
-            with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
-                lines = f.readlines()
-
-            for line in lines:
-                label_index = int(line.split()[0])
-                os.makedirs(f"{output_path}/{classes[label_index]}", exist_ok=True)
-                with open(f"{output_path}/{classes[label_index]}/{final_dict[i][1]}", 'a') as f:
-                    f.write(line)
-                if not os.path.exists(output_path + '/' + classes[label_index] + '/' + final_dict[i][0]):
-                    shutil.copy(self.images_path + '/' + final_dict[i][0],
-                                output_path + '/' + classes[label_index] + '/' + final_dict[i][0])
+                for line in lines:
+                    label_index = int(line.split()[0])
+                    os.makedirs(f"{output_path}/{classes[label_index]}", exist_ok=True)
+                    with open(f"{output_path}/{classes[label_index]}/{final_dict[i][1]}", 'a') as f:
+                        f.write(line.replace(str(label_index), "0", 1))
+                    if not os.path.exists(output_path + '/' + classes[label_index] + '/' + final_dict[i][0]):
+                        shutil.copy(self.images_path + '/' + final_dict[i][0],
+                                    output_path + '/' + classes[label_index] + '/' + final_dict[i][0])
+        except Exception as e:
+            print(e)
         print(f"sprate labels folder generated here : {output_path}/")
