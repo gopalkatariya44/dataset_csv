@@ -3,6 +3,7 @@ import re
 import config
 import pandas as pd
 from .dataset_schema import DatasetSchema
+import shutil
 
 
 class Dataset:
@@ -23,6 +24,13 @@ class Dataset:
         print("Verfy Dataset.........")
 
     def read_classes(self):
+        """
+        txt format:\n
+        bus\n
+        car\n
+        bike\n
+        :return: List Classes ["bus", "car", "bike"]
+        """
         with open(self.classes_path, 'r') as f:
             return [i.split('\n')[0] for i in f.readlines()]
 
@@ -31,41 +39,67 @@ class Dataset:
         df.to_csv(csv_path, index=False)
         print(f"csv file generated here '{csv_path}'")
 
-    def dataset_to_list(self):
-        dataset_list = []
-        p = re.compile(config.image_regex)
-        images_list = [i for i in os.listdir(self.images_path) if re.search(p, i)]
+    def similar_image_text_dict(self):
+        compiled_image_regex = re.compile(config.image_regex)
+        images_list = [i for i in os.listdir(self.images_path) if re.search(compiled_image_regex, i)]
         yolo_txt_list = [i for i in os.listdir(self.yolo_txt_path) if i.endswith('.txt') and i != "classes.txt"]
-
         # create dict for same txt and images
         file_dict = {}
-        for i, filename1 in enumerate(yolo_txt_list):
-            for j, filename2 in enumerate(images_list):
-                prefix = filename1[:-4:]
-                if prefix in filename2:
+        for i, txt in enumerate(yolo_txt_list):
+            for j, image in enumerate(images_list):
+                prefix = txt[:-4:]
+                if prefix in image:
                     if prefix in file_dict:
-                        file_dict[prefix].append(filename2, filename1)
+                        file_dict[prefix].append(image, txt)
                     else:
-                        file_dict[prefix] = [filename2, filename1]
+                        file_dict[prefix] = [image, txt]
+        return file_dict
 
+    def dataset_to_list(self):
+        """
+        return all iamges path and txt path with there labels\n
+        {
+        \t'index': 0,\n
+        \t'image_path': 'dataset/images/20230207145026.jpg',\n
+        \t'txt_path': 'dataset/annotations/20230207145026.txt',\n
+        \t'classes': {'0': 'car'}\n
+        }
+        :return: list of dict
+        """
+        dataset_list = []
         # now start create a dataset list for csv
-        index = 0
-        for i in file_dict:
-            with open(f"{self.yolo_txt_path}/{file_dict[i][-1]}", 'r') as f:
+        final_dict = self.similar_image_text_dict()
+        for index, i in enumerate(final_dict):
+            with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
                 lines = f.readlines()
-
-            dataset_schema = DatasetSchema()
-            dataset_schema.index = index
-            dataset_schema.image_path = f"{self.images_path}/{file_dict[i][0]}"
-            dataset_schema.txt_path = f"{self.yolo_txt_path}/{file_dict[i][-1]}"
-
+            dataset_schema = DatasetSchema(index=index,
+                                           image_path=f"{self.images_path}/{final_dict[i][0]}",
+                                           txt_path=f"{self.yolo_txt_path}/{final_dict[i][1]}",
+                                           classes={},
+                                           )
             for line in lines:
                 label_index = int(line.split()[0])
                 classes_list = self.read_classes()
                 dataset_schema.classes.update({
                     f"{label_index}": classes_list[label_index]
                 })
-
             dataset_list.append(dataset_schema.as_dict())
-            index += 1
         return dataset_list
+
+    def sprate_labels(self, output_path: str):
+        classes = self.read_classes()
+        final_dict = self.similar_image_text_dict()
+
+        for index, i in enumerate(final_dict):
+            with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
+                lines = f.readlines()
+
+            for line in lines:
+                label_index = int(line.split()[0])
+                os.makedirs(f"{output_path}/{classes[label_index]}", exist_ok=True)
+                with open(f"{output_path}/{classes[label_index]}/{final_dict[i][1]}", 'a') as f:
+                    f.write(line)
+                if not os.path.exists(output_path + '/' + classes[label_index] + '/' + final_dict[i][0]):
+                    shutil.copy(self.images_path + '/' + final_dict[i][0],
+                                output_path + '/' + classes[label_index] + '/' + final_dict[i][0])
+        print(f"sprate labels folder generated here : {output_path}/")
