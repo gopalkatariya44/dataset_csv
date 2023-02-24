@@ -4,6 +4,23 @@ import config
 import pandas as pd
 from .dataset_schema import DatasetSchema
 import shutil
+from PIL import Image
+
+
+def convert_cor_to_yolo_txt(label, x_min, y_min, x_max, y_max, image):
+    img = Image.open(image)
+    dw = 1. / img.width
+    dh = 1. / img.height
+    x = (x_min + x_max) / 2.0 - 1
+    y = (y_min + y_max) / 2.0 - 1
+    w = x_max - x_min
+    h = y_max - y_min
+    x = x * dw
+    w = w * dw
+    y = y * dh
+    h = h * dh
+    print(f"{label} {x} {y} {w} {h}\n")
+    return f"{label} {x} {y} {w} {h}\n"
 
 
 class Dataset:
@@ -13,11 +30,19 @@ class Dataset:
         images_path: add yolo images folder path here.\n
         classes_path: add single file classes.txt here.
         """
-        if yolo_txt_path is None or images_path is None or classes_path is None:
-            print("please give dataset paths....")
+
         self.yolo_txt_path = yolo_txt_path
         self.images_path = images_path
         self.classes_path = classes_path
+
+        if self.yolo_txt_path is None:
+            self.yolo_txt_path = images_path
+        elif self.images_path is None:
+            self.images_path = yolo_txt_path
+        elif self.yolo_txt_path is None and self.images_path is None:
+            print("please give dataset paths....")
+        elif self.classes_path is None:
+            print("please give classes paths....")
 
     @staticmethod
     def verfy_dataset():
@@ -50,6 +75,8 @@ class Dataset:
             compiled_image_regex = re.compile(config.image_regex)
             images_list = [i for i in os.listdir(self.images_path) if re.search(compiled_image_regex, i)]
             yolo_txt_list = [i for i in os.listdir(self.yolo_txt_path) if i.endswith('.txt') and i != "classes.txt"]
+            print(images_list[:5])
+            print(yolo_txt_list[:5])
             # create dict for same txt and images
             file_dict = {}
             for i, txt in enumerate(yolo_txt_list):
@@ -60,6 +87,7 @@ class Dataset:
                             file_dict[prefix].append(image, txt)
                         else:
                             file_dict[prefix] = [image, txt]
+            print(file_dict)
             return file_dict
         except Exception as e:
             print(e)
@@ -102,7 +130,7 @@ class Dataset:
         classes = self.read_classes()
         final_dict = self.similar_image_text_dict()
         try:
-            for index, i in enumerate(final_dict):
+            for i in final_dict:
                 with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
                     lines = f.readlines()
 
@@ -117,3 +145,34 @@ class Dataset:
         except Exception as e:
             print(e)
         print(f"sprate labels folder generated here : {output_path}/")
+
+    def change_label_to_index(self, output_path: str):
+        classes = self.read_classes()
+        final_dict = self.similar_image_text_dict()
+
+        # try:
+        for i in final_dict:
+            with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
+                lines = f.readlines()
+            for line in lines:
+                line_split = line.split()
+                label = line.split()[0]
+                label_index = 0
+                for inx, cls in enumerate(classes):
+                    if cls == label:
+                        label_index = inx
+                        break
+                print(label_index, line_split[1], line_split[2], line_split[3],
+                      line_split[4], self.images_path + '/' + final_dict[i][0])
+                yolo_txt = convert_cor_to_yolo_txt(label_index, float(line_split[1]), float(line_split[2]),
+                                                   float(line_split[3]),
+                                                   float(line_split[4]), self.images_path + '/' + final_dict[i][0])
+                print(yolo_txt)
+                os.makedirs(f"{output_path}", exist_ok=True)
+                with open(f"{output_path}/{final_dict[i][1]}", 'a') as f:
+                    f.write(yolo_txt)
+                if not os.path.exists(output_path + '/' + final_dict[i][0]):
+                    shutil.copy(self.images_path + '/' + final_dict[i][0],
+                                output_path + '/' + final_dict[i][0])
+        # except Exception as e:
+        #     print(e)
