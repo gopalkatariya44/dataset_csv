@@ -4,7 +4,7 @@ from models import Dataset
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--annotations', type=str, default='dataset',
+    parser.add_argument('-a', '--annotations', type=str, default=None,
                         help='Yolo txt annotations path')
     parser.add_argument('-i', '--images', type=str, default=None, help='images path')
     parser.add_argument('-c', '--classes', type=str, default=None, help='classes.txt path')

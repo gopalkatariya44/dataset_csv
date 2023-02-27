@@ -6,6 +6,8 @@ from .dataset_schema import DatasetSchema
 import shutil
 from PIL import Image
 
+IMAGE_REGEX = "([^\\s]+(\\.(?i)(jpe?g|png|gif|bmp))$)"
+
 
 def convert_cor_to_yolo_txt(label, x_min, y_min, x_max, y_max, image):
     img = Image.open(image)
@@ -19,7 +21,6 @@ def convert_cor_to_yolo_txt(label, x_min, y_min, x_max, y_max, image):
     w = w * dw
     y = y * dh
     h = h * dh
-    print(f"{label} {x} {y} {w} {h}\n")
     return f"{label} {x} {y} {w} {h}\n"
 
 
@@ -72,22 +73,21 @@ class Dataset:
 
     def similar_image_text_dict(self):
         try:
-            compiled_image_regex = re.compile(config.image_regex)
+            compiled_image_regex = re.compile(IMAGE_REGEX)
             images_list = [i for i in os.listdir(self.images_path) if re.search(compiled_image_regex, i)]
             yolo_txt_list = [i for i in os.listdir(self.yolo_txt_path) if i.endswith('.txt') and i != "classes.txt"]
-            print(images_list[:5])
-            print(yolo_txt_list[:5])
+            print(images_list[:3], "...")
+            print(yolo_txt_list[:3], "...")
             # create dict for same txt and images
             file_dict = {}
-            for i, txt in enumerate(yolo_txt_list):
-                for j, image in enumerate(images_list):
+            for txt in yolo_txt_list:
+                for image in images_list:
                     prefix = txt[:-4:]
-                    if prefix in image:
-                        if prefix in file_dict:
-                            file_dict[prefix].append(image, txt)
-                        else:
-                            file_dict[prefix] = [image, txt]
-            print(file_dict)
+
+                    if (f"{prefix}.jpg" == image or
+                            f"{prefix}.png" == image or
+                            f"{prefix}.jpeg" == image):
+                        file_dict[prefix] = [image, txt]
             return file_dict
         except Exception as e:
             print(e)
@@ -146,33 +146,33 @@ class Dataset:
             print(e)
         print(f"sprate labels folder generated here : {output_path}/")
 
-    def change_label_to_index(self, output_path: str):
+    def change_label_to_index(self, output_path: str, is_xyxy=True):
         classes = self.read_classes()
         final_dict = self.similar_image_text_dict()
 
-        # try:
-        for i in final_dict:
-            with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
-                lines = f.readlines()
-            for line in lines:
-                line_split = line.split()
-                label = line.split()[0]
-                label_index = 0
-                for inx, cls in enumerate(classes):
-                    if cls == label:
-                        label_index = inx
-                        break
-                print(label_index, line_split[1], line_split[2], line_split[3],
-                      line_split[4], self.images_path + '/' + final_dict[i][0])
-                yolo_txt = convert_cor_to_yolo_txt(label_index, float(line_split[1]), float(line_split[2]),
-                                                   float(line_split[3]),
-                                                   float(line_split[4]), self.images_path + '/' + final_dict[i][0])
-                print(yolo_txt)
-                os.makedirs(f"{output_path}", exist_ok=True)
-                with open(f"{output_path}/{final_dict[i][1]}", 'a') as f:
-                    f.write(yolo_txt)
-                if not os.path.exists(output_path + '/' + final_dict[i][0]):
-                    shutil.copy(self.images_path + '/' + final_dict[i][0],
-                                output_path + '/' + final_dict[i][0])
-        # except Exception as e:
-        #     print(e)
+        try:
+            for i in final_dict:
+                with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
+                    lines = f.readlines()
+                for line in lines:
+                    line_split = line.split()
+                    label = line.split()[0]
+                    label_index = 0
+                    for inx, cls in enumerate(classes):
+                        if cls == label:
+                            label_index = inx
+                            break
+                    print("1-->", label_index, line_split[1], line_split[2], line_split[3], line_split[4])
+                    yolo_txt = convert_cor_to_yolo_txt(label_index, float(line_split[1]), float(line_split[2]),
+                                                       float(line_split[3]),
+                                                       float(line_split[4]), self.images_path + '/' + final_dict[i][0])
+                    print("2-->", yolo_txt)
+                    os.makedirs(f"{output_path}", exist_ok=True)
+                    with open(f"{output_path}/{final_dict[i][1]}", 'a') as f:
+                        f.write(yolo_txt)
+                    if not os.path.exists(output_path + '/' + final_dict[i][0]):
+                        shutil.copy(self.images_path + '/' + final_dict[i][0],
+                                    output_path + '/' + final_dict[i][0])
+            print("label changed done.")
+        except Exception as e:
+            print(e)
