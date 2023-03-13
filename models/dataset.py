@@ -1,6 +1,5 @@
 import os
 import re
-import config
 import pandas as pd
 from .dataset_schema import DatasetSchema
 import shutil
@@ -25,22 +24,22 @@ def convert_cor_to_yolo_txt(label, x_min, y_min, x_max, y_max, image):
 
 
 class Dataset:
-    def __init__(self, yolo_txt_path: str = None, images_path: str = None, classes_path: str = None):
+    def __init__(self, labels_path: str = None, images_path: str = None, classes_path: str = None):
         """
-        yolo_txt_path: add yolo txt folder path here.\n
+        labels_path: add yolo txt folder path here.\n
         images_path: add yolo images folder path here.\n
         classes_path: add single file classes.txt here.
         """
 
-        self.yolo_txt_path = yolo_txt_path
+        self.labels_path = labels_path
         self.images_path = images_path
         self.classes_path = classes_path
 
-        if self.yolo_txt_path is None:
-            self.yolo_txt_path = images_path
+        if self.labels_path is None:
+            self.labels_path = images_path
         elif self.images_path is None:
-            self.images_path = yolo_txt_path
-        elif self.yolo_txt_path is None and self.images_path is None:
+            self.images_path = labels_path
+        elif self.labels_path is None and self.images_path is None:
             print("please give dataset paths....")
         elif self.classes_path is None:
             print("please give classes paths....")
@@ -59,7 +58,7 @@ class Dataset:
         """
         try:
             with open(self.classes_path, 'r') as f:
-                return [i.split('\n')[0] for i in f.readlines()]
+                return [i.split('\n')[0].strip() for i in f.readlines()]
         except Exception as e:
             print(e)
 
@@ -75,9 +74,7 @@ class Dataset:
         try:
             compiled_image_regex = re.compile(IMAGE_REGEX)
             images_list = [i for i in os.listdir(self.images_path) if re.search(compiled_image_regex, i)]
-            yolo_txt_list = [i for i in os.listdir(self.yolo_txt_path) if i.endswith('.txt') and i != "classes.txt"]
-            print(images_list[:3], "...")
-            print(yolo_txt_list[:3], "...")
+            yolo_txt_list = [i for i in os.listdir(self.labels_path) if i.endswith('.txt') and i != "classes.txt"]
             # create dict for same txt and images
             file_dict = {}
             for txt in yolo_txt_list:
@@ -94,7 +91,7 @@ class Dataset:
 
     def dataset_to_list(self):
         """
-        return all iamges path and txt path with there labels\n
+        return all images path and txt path with their labels\n
         {
         \t'index': 0,\n
         \t'image_path': 'dataset/images/20230207145026.jpg',\n
@@ -108,11 +105,11 @@ class Dataset:
         final_dict = self.similar_image_text_dict()
         try:
             for index, i in enumerate(final_dict):
-                with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
+                with open(f"{self.labels_path}/{final_dict[i][-1]}", 'r') as f:
                     lines = f.readlines()
                 dataset_schema = DatasetSchema(index=index,
                                                image_path=f"{self.images_path}/{final_dict[i][0]}",
-                                               txt_path=f"{self.yolo_txt_path}/{final_dict[i][1]}",
+                                               txt_path=f"{self.labels_path}/{final_dict[i][1]}",
                                                classes={},
                                                )
                 for line in lines:
@@ -131,7 +128,7 @@ class Dataset:
         final_dict = self.similar_image_text_dict()
         try:
             for i in final_dict:
-                with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
+                with open(f"{self.labels_path}/{final_dict[i][-1]}", 'r') as f:
                     lines = f.readlines()
 
                 for line in lines:
@@ -146,13 +143,13 @@ class Dataset:
             print(e)
         print(f"sprate labels folder generated here : {output_path}/")
 
-    def change_label_to_index(self, output_path: str, is_xyxy=True):
+    def change_label_to_index(self, output_path: str):
         classes = self.read_classes()
         final_dict = self.similar_image_text_dict()
 
         try:
             for i in final_dict:
-                with open(f"{self.yolo_txt_path}/{final_dict[i][-1]}", 'r') as f:
+                with open(f"{self.labels_path}/{final_dict[i][-1]}", 'r') as f:
                     lines = f.readlines()
                 for line in lines:
                     line_split = line.split()
@@ -176,3 +173,6 @@ class Dataset:
             print("label changed done.")
         except Exception as e:
             print(e)
+
+    def xml_to_yolo(self):
+        pass
